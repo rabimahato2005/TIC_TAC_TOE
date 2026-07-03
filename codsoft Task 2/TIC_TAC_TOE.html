@@ -1,0 +1,589 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>Tic · Tac · TOE</title>
+<style>
+@import url('https://fonts.googleapis.com/css2?family=Caveat:wght@500;700&family=Patrick+Hand&family=JetBrains+Mono:wght@400;600&display=swap');
+ 
+:root{
+  --board: #02152263;
+  --board-dark: #142019;
+  --chalk: #f2efe4;
+  --chalk-dim: #b9c4bc;
+  --dust: #6f8078;
+  --yellow: #e8c468;
+  --blue: #86bfd4;
+  --red: #d97b6c;
+  --line: rgba(242,239,228,0.55);
+}
+ 
+*{box-sizing:border-box;}
+html,body{height:100%;}
+body{
+  margin:0;
+  min-height:100%;
+  background:
+    radial-gradient(ellipse at 20% -10%, rgba(191, 71, 15, 0.901), transparent 55%),
+    var(--board);
+  color:var(--chalk);
+  font-family:'Patrick Hand', sans-serif;
+  display:flex;
+  align-items:center;
+  justify-content:center;
+  padding:32px 16px;
+}
+ 
+.wrap{
+  width:100%;
+  max-width:920px;
+}
+
+.chalk-surface{
+  position:relative;
+}
+.chalk-surface::before{
+  content:"";
+  position:absolute; inset:0;
+  background-image:
+    radial-gradient(rgba(217, 60, 60, 0) 1px, transparent 1px);
+  background-size: 3px 3px;
+  pointer-events:none;
+  opacity:0.6;
+}
+ 
+header{
+  text-align:center;
+  margin-bottom:28px;
+  position:relative;
+}
+h1{
+  font-family:'Caveat', cursive;
+  font-weight:700;
+  font-size:clamp(2.6rem, 6vw, 4rem);
+  margin:0;
+  letter-spacing:2px;
+  color:var(--chalk);
+  text-shadow: 0 0 14px rgba(242,239,228,0.15);
+}
+h1 span{ color:var(--yellow); }
+.subtitle{
+  font-family:'JetBrains Mono', monospace;
+  font-size:0.78rem;
+  letter-spacing:3px;
+  text-transform:uppercase;
+  color:var(--dust);
+  margin-top:2px;
+}
+ 
+.layout{
+  display:grid;
+  grid-template-columns: minmax(0,1fr) 300px;
+  gap:36px;
+  align-items:start;
+}
+@media (max-width: 720px){
+  .layout{ grid-template-columns: 1fr; }
+}
+ 
+.board-area{
+  display:flex;
+  flex-direction:column;
+  align-items:center;
+  gap:16px;
+}
+ 
+.board-frame{
+  position:relative;
+  width:min(420px, 90vw);
+  aspect-ratio:1;
+}
+ 
+.status-line{
+  font-family:'Caveat', cursive;
+  font-size:1.5rem;
+  color:var(--chalk-dim);
+  min-height:2rem;
+  text-align:center;
+}
+.status-line.win{ color:var(--yellow); }
+.status-line.lose{ color:var(--red); }
+.status-line.draw{ color:var(--blue); }
+ 
+svg.board{
+  width:100%;
+  height:100%;
+  display:block;
+  cursor:pointer;
+}
+.gridline{
+  stroke:var(--line);
+  stroke-width:3;
+  stroke-linecap:round;
+  fill:none;
+}
+.cell-hit{
+  fill:transparent;
+}
+.mark{
+  fill:none;
+  stroke-linecap:round;
+  stroke-linejoin:round;
+  stroke-width:9;
+  filter: drop-shadow(0 0 6px rgba(0,0,0,0.35));
+}
+.mark.x{ stroke:var(--yellow); }
+.mark.o{ stroke:var(--blue); }
+.winline{
+  stroke:var(--red);
+  stroke-width:7;
+  stroke-linecap:round;
+  opacity:0;
+  transition:opacity .3s ease;
+}
+.winline.show{ opacity:0.9; }
+ 
+.controls-row{
+  display:flex;
+  gap:12px;
+}
+button{
+  font-family:'JetBrains Mono', monospace;
+  font-size:0.75rem;
+  letter-spacing:1.5px;
+  text-transform:uppercase;
+  background:transparent;
+  border:1.5px solid var(--dust);
+  color:var(--chalk);
+  padding:10px 18px;
+  border-radius:3px;
+  cursor:pointer;
+  transition:border-color .15s ease, color .15s ease, background .15s ease;
+}
+button:hover{
+  border-color:var(--yellow);
+  color:var(--yellow);
+}
+button:focus-visible{
+  outline:2px solid var(--yellow);
+  outline-offset:2px;
+}
+button.primary{
+  border-color:var(--yellow);
+  color:var(--yellow);
+}
+
+.panel{
+  display:flex;
+  flex-direction:column;
+  gap:22px;
+}
+.panel-block{
+  border-top:1px dashed var(--dust);
+  padding-top:14px;
+}
+.panel-block:first-child{
+  border-top:none;
+  padding-top:0;
+}
+.eyebrow{
+  font-family:'JetBrains Mono', monospace;
+  font-size:0.68rem;
+  letter-spacing:2.5px;
+  text-transform:uppercase;
+  color:var(--dust);
+  margin:0 0 10px 0;
+}
+ 
+.score-row{
+  display:flex;
+  justify-content:space-between;
+  font-family:'JetBrains Mono', monospace;
+  font-size:0.85rem;
+}
+.score-item{ text-align:center; flex:1; }
+.score-num{
+  display:block;
+  font-family:'Caveat', cursive;
+  font-size:2.1rem;
+  line-height:1;
+  margin-bottom:2px;
+}
+.score-item.you .score-num{ color:var(--yellow); }
+.score-item.draw .score-num{ color:var(--blue); }
+.score-item.ai .score-num{ color:var(--red); }
+.score-label{ color:var(--dust); font-size:0.65rem; letter-spacing:1px; }
+ 
+.option-group{
+  display:flex;
+  flex-direction:column;
+  gap:8px;
+}
+.option{
+  display:flex;
+  align-items:center;
+  gap:10px;
+  font-family:'Patrick Hand', sans-serif;
+  font-size:1.05rem;
+  cursor:pointer;
+  color:var(--chalk-dim);
+}
+.option input{ accent-color: var(--yellow); }
+.option.active{ color:var(--chalk); }
+ 
+.trace-box{
+  font-family:'JetBrains Mono', monospace;
+  font-size:0.8rem;
+  line-height:1.6;
+  color:var(--chalk-dim);
+  background:rgba(0,0,0,0.18);
+  border:1px solid rgba(255,255,255,0.08);
+  border-radius:4px;
+  padding:12px 14px;
+  min-height:92px;
+}
+.trace-box .verdict{
+  font-family:'Caveat', cursive;
+  font-size:1.3rem;
+  display:block;
+  margin-bottom:4px;
+}
+.trace-box .verdict.pos{ color:var(--yellow); }
+.trace-box .verdict.neg{ color:var(--red); }
+.trace-box .verdict.zero{ color:var(--blue); }
+.trace-dim{ color:var(--dust); }
+</style>
+</head>
+<body>
+<div class="wrap chalk-surface">
+  <header>
+    <h1>Tic · Tac · <span>TOE</span></h1>
+    
+  </header>
+ 
+  <div class="layout">
+    <div class="board-area">
+      <div class="board-frame">
+        <svg class="board" viewBox="0 0 300 300" id="board"></svg>
+      </div>
+      <div class="status-line" id="status">your move — place an X</div>
+      <div class="controls-row">
+        <button id="newRoundBtn">New round</button>
+        <button id="resetScoreBtn">Reset score</button>
+      </div>
+    </div>
+ 
+    <div class="panel">
+      <div class="panel-block">
+        <p class="eyebrow">Score</p>
+        <div class="score-row">
+          <div class="score-item you"><span class="score-num" id="scoreYou">0</span><span class="score-label">You</span></div>
+          <div class="score-item draw"><span class="score-num" id="scoreDraw">0</span><span class="score-label">Draws</span></div>
+          <div class="score-item ai"><span class="score-num" id="scoreAI">0</span><span class="score-label">AI</span></div>
+        </div>
+      </div>
+ 
+      <div class="panel-block">
+        <p class="eyebrow">Difficulty</p>
+        <div class="option-group" id="difficultyGroup">
+          <label class="option"><input type="radio" name="diff" value="easy"> Easy — random moves</label>
+          <label class="option"><input type="radio" name="diff" value="medium"> Medium — sometimes slips</label>
+          <label class="option"><input type="radio" name="diff" value="unbeatable" checked> Unbeatable — full minimax</label>
+        </div>
+      </div>
+ 
+      <div class="panel-block">
+        <p class="eyebrow">Who starts</p>
+        <div class="option-group" id="starterGroup">
+          <label class="option"><input type="radio" name="starter" value="you" checked> You go first</label>
+          <label class="option"><input type="radio" name="starter" value="ai"> AI goes first</label>
+        </div>
+      </div>
+ 
+      <div class="panel-block">
+        <p class="eyebrow">AI's thinking</p>
+        <div class="trace-box" id="trace">
+          <span class="trace-dim">Waiting for the first move…</span>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+ 
+<script>
+(function(){
+  const HUMAN = 'X', AI = 'O';
+  const WINS = [
+    [0,1,2],[3,4,5],[6,7,8],
+    [0,3,6],[1,4,7],[2,5,8],
+    [0,4,8],[2,4,6]
+  ];
+ 
+  let board = Array(9).fill(null);
+  let gameOver = false;
+  let humanTurn = true;
+  let scores = {you:0, draw:0, ai:0};
+ 
+  const svg = document.getElementById('board');
+  const statusEl = document.getElementById('status');
+  const traceEl = document.getElementById('trace');
+ 
+  function cellCenter(i){
+    const col = i % 3, row = Math.floor(i/3);
+    return { x: 50 + col*100, y: 50 + row*100 };
+  }
+ 
+  function buildBoard(){
+    svg.innerHTML = '';
+  
+    const lines = [
+      [100,8,100,292],[200,8,200,292],
+      [8,100,292,100],[8,200,292,200]
+    ];
+    lines.forEach(([x1,y1,x2,y2])=>{
+      const l = document.createElementNS(svg.namespaceURI,'line');
+      l.setAttribute('x1',x1); l.setAttribute('y1',y1);
+      l.setAttribute('x2',x2); l.setAttribute('y2',y2);
+      l.setAttribute('class','gridline');
+      svg.appendChild(l);
+    });
+    
+    const wl = document.createElementNS(svg.namespaceURI,'line');
+    wl.setAttribute('id','winline');
+    wl.setAttribute('class','winline');
+    svg.appendChild(wl);
+    // cell hit targets
+    for(let i=0;i<9;i++){
+      const {x,y} = cellCenter(i);
+      const rect = document.createElementNS(svg.namespaceURI,'rect');
+      rect.setAttribute('x', x-50); rect.setAttribute('y', y-50);
+      rect.setAttribute('width', 100); rect.setAttribute('height', 100);
+      rect.setAttribute('class','cell-hit');
+      rect.setAttribute('data-i', i);
+      rect.addEventListener('click', ()=> handleHumanMove(i));
+      svg.appendChild(rect);
+    }
+  }
+ 
+  function drawMark(i, player){
+    const {x,y} = cellCenter(i);
+    const g = document.createElementNS(svg.namespaceURI,'g');
+    if(player === HUMAN){
+      const p1 = document.createElementNS(svg.namespaceURI,'path');
+      p1.setAttribute('d', `M ${x-28} ${y-28} L ${x+28} ${y+28}`);
+      p1.setAttribute('class','mark x');
+      const p2 = document.createElementNS(svg.namespaceURI,'path');
+      p2.setAttribute('d', `M ${x+28} ${y-28} L ${x-28} ${y+28}`);
+      p2.setAttribute('class','mark x');
+      [p1,p2].forEach(p=>{
+        const len = 60;
+        p.style.strokeDasharray = len;
+        p.style.strokeDashoffset = len;
+        g.appendChild(p);
+      });
+    } else {
+      const c = document.createElementNS(svg.namespaceURI,'circle');
+      c.setAttribute('cx', x); c.setAttribute('cy', y); c.setAttribute('r', 30);
+      c.setAttribute('class','mark o');
+      const len = 2*Math.PI*30;
+      c.style.strokeDasharray = len;
+      c.style.strokeDashoffset = len;
+      g.appendChild(c);
+    }
+    svg.appendChild(g);
+    requestAnimationFrame(()=>{
+      g.querySelectorAll('path,circle').forEach(el=>{
+        el.style.transition = 'stroke-dashoffset .35s ease';
+        el.style.strokeDashoffset = 0;
+      });
+    });
+  }
+ 
+  function drawWinLine(combo){
+    const a = cellCenter(combo[0]), b = cellCenter(combo[2]);
+    const wl = document.getElementById('winline');
+    wl.setAttribute('x1', a.x); wl.setAttribute('y1', a.y);
+    wl.setAttribute('x2', b.x); wl.setAttribute('y2', b.y);
+    wl.classList.add('show');
+  }
+ 
+ 
+  function winnerOf(bd){
+    for(const combo of WINS){
+      const [a,b,c] = combo;
+      if(bd[a] && bd[a]===bd[b] && bd[b]===bd[c]) return {player: bd[a], combo};
+    }
+    if(bd.every(c=>c)) return {player:'draw', combo:null};
+    return null;
+  }
+ 
+  let nodesSearched = 0;
+ 
+  function minimax(bd, depth, isMaximizing, alpha, beta){
+    nodesSearched++;
+    const result = winnerOf(bd);
+    if(result){
+      if(result.player === AI) return 10 - depth;
+      if(result.player === HUMAN) return depth - 10;
+      return 0;
+    }
+    if(isMaximizing){
+      let best = -Infinity;
+      for(let i=0;i<9;i++){
+        if(!bd[i]){
+          bd[i] = AI;
+          best = Math.max(best, minimax(bd, depth+1, false, alpha, beta));
+          bd[i] = null;
+          alpha = Math.max(alpha, best);
+          if(beta <= alpha) break;
+        }
+      }
+      return best;
+    } else {
+      let best = Infinity;
+      for(let i=0;i<9;i++){
+        if(!bd[i]){
+          bd[i] = HUMAN;
+          best = Math.min(best, minimax(bd, depth+1, true, alpha, beta));
+          bd[i] = null;
+          beta = Math.min(beta, best);
+          if(beta <= alpha) break;
+        }
+      }
+      return best;
+    }
+  }
+ 
+  function bestMove(bd){
+    nodesSearched = 0;
+    let best = -Infinity, move = -1;
+    let alpha = -Infinity, beta = Infinity;
+    for(let i=0;i<9;i++){
+      if(!bd[i]){
+        bd[i] = AI;
+        const score = minimax(bd, 0, false, alpha, beta);
+        bd[i] = null;
+        if(score > best){ best = score; move = i; }
+        alpha = Math.max(alpha, best);
+      }
+    }
+    return {move, score: best, nodes: nodesSearched};
+  }
+ 
+  function randomMove(bd){
+    const empties = bd.map((v,i)=>v?null:i).filter(v=>v!==null);
+    return empties[Math.floor(Math.random()*empties.length)];
+  }
+ 
+  function chooseAIMove(bd){
+    const diff = document.querySelector('input[name="diff"]:checked').value;
+    if(diff === 'easy'){
+      const m = randomMove(bd);
+      return { move:m, score:null, nodes:0 };
+    }
+    if(diff === 'medium'){
+      if(Math.random() < 0.35){
+        const m = randomMove(bd);
+        return { move:m, score:null, nodes:0 };
+      }
+    }
+    return bestMove(bd);
+  }
+ 
+  function setStatus(text, cls){
+    statusEl.textContent = text;
+    statusEl.className = 'status-line' + (cls ? ' '+cls : '');
+  }
+ 
+  function updateTrace(info){
+    if(info.score === null){
+      traceEl.innerHTML = `<span class="trace-dim">AI rolled the dice on this one — no search performed.</span>`;
+      return;
+    }
+    const s = info.score;
+    let verdictClass = 'zero', verdictText = 'Position is balanced';
+    if(s > 0){ verdictClass='pos'; verdictText = s >= 9 ? 'AI sees a forced win' : 'Position favors the AI'; }
+    else if(s < 0){ verdictClass='neg'; verdictText = s <= -9 ? 'AI is heading for a loss' : 'Position favors you'; }
+    else { verdictText = 'Best case from here is a draw'; }
+    traceEl.innerHTML = `
+      <span class="verdict ${verdictClass}">${verdictText}</span>
+      minimax value: <b>${s > 0 ? '+'+s : s}</b><br>
+      nodes searched: ${info.nodes}
+    `;
+  }
+ 
+  function endGame(result){
+    gameOver = true;
+    if(result.combo) drawWinLine(result.combo);
+    if(result.player === HUMAN){
+      scores.you++; setStatus('you win — the chalk never lies', 'win');
+    } else if(result.player === AI){
+      scores.ai++; setStatus('AI takes this one', 'lose');
+    } else {
+      scores.draw++; setStatus("draw — perfect play on both sides", 'draw');
+    }
+    renderScores();
+  }
+ 
+  function renderScores(){
+    document.getElementById('scoreYou').textContent = scores.you;
+    document.getElementById('scoreDraw').textContent = scores.draw;
+    document.getElementById('scoreAI').textContent = scores.ai;
+  }
+ 
+  function handleHumanMove(i){
+    if(gameOver || !humanTurn || board[i]) return;
+    board[i] = HUMAN;
+    drawMark(i, HUMAN);
+    const result = winnerOf(board);
+    if(result){ endGame(result); return; }
+    humanTurn = false;
+    setStatus('AI is thinking…');
+    setTimeout(aiMove, 380);
+  }
+ 
+  function aiMove(){
+    if(gameOver) return;
+    const info = chooseAIMove(board);
+    if(info.move === -1 || info.move === undefined) return;
+    board[info.move] = AI;
+    drawMark(info.move, AI);
+    updateTrace(info);
+    const result = winnerOf(board);
+    if(result){ endGame(result); return; }
+    humanTurn = true;
+    setStatus('your move — place an X');
+  }
+ 
+  function newRound(){
+    board = Array(9).fill(null);
+    gameOver = false;
+    buildBoard();
+    traceEl.innerHTML = `<span class="trace-dim">Waiting for the first move…</span>`;
+    const starter = document.querySelector('input[name="starter"]:checked').value;
+    if(starter === 'you'){
+      humanTurn = true;
+      setStatus('your move — place an X');
+    } else {
+      humanTurn = false;
+      setStatus('AI opens the round…');
+      setTimeout(aiMove, 400);
+    }
+  }
+ 
+  document.getElementById('newRoundBtn').addEventListener('click', newRound);
+  document.getElementById('resetScoreBtn').addEventListener('click', ()=>{
+    scores = {you:0, draw:0, ai:0};
+    renderScores();
+    newRound();
+  });
+  document.querySelectorAll('input[name="starter"]').forEach(r=>{
+    r.addEventListener('change', newRound);
+  });
+ 
+  buildBoard();
+  renderScores();
+})();
+</script>
+</body>
+</html>
