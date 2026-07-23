@@ -1,15 +1,3 @@
-"""
-Tic-Tac-Toe with an unbeatable Minimax (+ Alpha-Beta Pruning) AI.
-
-Run it:
-    python tic_tac_toe.py
-
-The AI never loses: it either wins or forces a draw. This file is meant
-to be read top to bottom as a small, self-contained study of the
-Minimax algorithm and Alpha-Beta pruning applied to a perfect-information
-game.
-"""
-
 import math
 import random
 
@@ -18,9 +6,9 @@ AI = "O"
 EMPTY = " "
 
 WIN_COMBOS = [
-    (0, 1, 2), (3, 4, 5), (6, 7, 8),  # rows
-    (0, 3, 6), (1, 4, 7), (2, 5, 8),  # columns
-    (0, 4, 8), (2, 4, 6),             # diagonals
+    (0, 1, 2), (3, 4, 5), (6, 7, 8),  
+    (0, 3, 6), (1, 4, 7), (2, 5, 8),  
+    (0, 4, 8), (2, 4, 6),             
 ]
 
 
@@ -57,20 +45,6 @@ def available_moves(board):
     return [i for i, v in enumerate(board) if v == EMPTY]
 
 
-# ---------------------------------------------------------------------
-# Minimax with Alpha-Beta Pruning
-# ---------------------------------------------------------------------
-#
-# The AI (maximizing player) wants the highest score, the human
-# (minimizing player) wants the lowest. A terminal board is scored as:
-#   +10 - depth   if the AI wins   (prefer winning sooner)
-#   depth - 10    if the human wins (prefer losing later / avoid it)
-#    0            on a draw
-#
-# Alpha-beta pruning skips branches that can't possibly change the
-# final decision, which is what lets this search stay instant even
-# though it's a brute-force full-depth search.
-
 def minimax(board, depth, is_maximizing, alpha, beta):
     result = winner(board)
     if result == AI:
@@ -88,7 +62,7 @@ def minimax(board, depth, is_maximizing, alpha, beta):
             board[move] = EMPTY
             alpha = max(alpha, best)
             if beta <= alpha:
-                break  # beta cutoff: the minimizer already has a better option
+                break  
         return best
     else:
         best = math.inf
@@ -98,7 +72,7 @@ def minimax(board, depth, is_maximizing, alpha, beta):
             board[move] = EMPTY
             beta = min(beta, best)
             if beta <= alpha:
-                break  # alpha cutoff: the maximizer already has a better option
+                break 
         return best
 
 
